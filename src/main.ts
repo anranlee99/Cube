@@ -7,8 +7,17 @@ const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
 class Cube {
     vertices: Array<{ x: number, y: number, z: number }>;
+    faces: Array<Array<number>>;
     constructor(vertices: Array<{ x: number, y: number, z: number }>) {
         this.vertices = vertices;
+        this.faces = [
+            [0, 1, 2, 3],
+            [4, 5, 6, 7],
+            [0, 4, 5, 1],
+            [1, 5, 6, 2],
+            [2, 6, 7, 3],
+            [3, 7, 4, 0]
+        ];
     }
     getCenter() {
         let sumX = 0, sumY = 0, sumZ = 0;
@@ -25,13 +34,19 @@ class Cube {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
+        // ctx.save();
+        // ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.beginPath();
-        ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
-        for (let i = 1; i < this.vertices.length; i++) {
-            ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+        for (let i = 0; i < this.faces.length; i++) {
+            const face = this.faces[i];
+            ctx.moveTo(this.vertices[face[0]].x, this.vertices[face[0]].y);
+            for (let j = 1; j < face.length; j++) {
+                ctx.lineTo(this.vertices[face[j]].x, this.vertices[face[j]].y);
+            }
+            ctx.closePath();
         }
-        ctx.closePath();
         ctx.stroke();
+        // ctx.restore();
     }
 
     rotateX(theta: number) {
