@@ -142,5 +142,29 @@ document.addEventListener('mouseup', () => {
     isMouseDown = false;
 });
 
+//add touch event
+document.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isMouseDown = true;
+});
+
+document.addEventListener('touchmove', (e) => {
+    if (isMouseDown) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        cube.rotateY(dx * 0.01);
+        cube.rotateX(dy * 0.01);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        cube.draw(ctx);
+    }
+});
+
+document.addEventListener('touchend', () => {
+    isMouseDown = false;
+});
+
 
 
