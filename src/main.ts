@@ -146,7 +146,8 @@ document.addEventListener('mousemove', (e) => {
         const dy = e.clientY - startY;
         startX = e.clientX;
         startY = e.clientY;
-        cube.rotateY(dx * 0.01);
+        console.log(dx, dy);    
+        cube.rotateY(dx * -0.01);
         cube.rotateX(dy * 0.01);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         cube.draw(ctx);
