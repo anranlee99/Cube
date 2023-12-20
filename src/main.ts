@@ -1,200 +1,128 @@
-const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-canvas.width = 1024;
-canvas.height = 768;
-
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-
 class Cube {
-    vertices: Array<{ x: number, y: number, z: number }>;
-    faces: Array<Array<number>>;
-    constructor(vertices: Array<{ x: number, y: number, z: number }>) {
-        this.vertices = vertices;
-        this.faces = [
-            [0, 1, 2, 3],
-            [4, 5, 6, 7],
-            [0, 4, 5, 1],
-            [1, 5, 6, 2],
-            [2, 6, 7, 3],
-            [3, 7, 4, 0]
+    ctx: CanvasRenderingContext2D;
+    size: number;
+    vertices: number[][];
+    faces: number[][];
+    colors: string[];
+    rotationX: number;
+    rotationY: number;
+
+    constructor(context: CanvasRenderingContext2D, size: number) {
+        this.ctx = context;
+        this.size = size;
+        this.vertices = [
+            [-1, -1, -1], 
+            [1, -1, -1], 
+            [1, 1, -1], 
+            [-1, 1, -1],
+            [-1, -1, 1], 
+            [1, -1, 1], 
+            [1, 1, 1],
+            [-1, 1, 1]
         ];
-    }
-    getCenter() {
-        let sumX = 0, sumY = 0, sumZ = 0;
-        for (let i = 0; i < this.vertices.length; i++) {
-            sumX += this.vertices[i].x;
-            sumY += this.vertices[i].y;
-            sumZ += this.vertices[i].z;
-        }
-        return {
-            x: sumX / this.vertices.length,
-            y: sumY / this.vertices.length,
-            z: sumZ / this.vertices.length
-        };
+
+        this.faces = [
+            [0, 1, 2, 3], 
+            [1, 5, 6, 2], 
+            [5, 4, 7, 6],
+            [4, 0, 3, 7], 
+            [0, 4, 5, 1], 
+            [3, 2, 6, 7],
+        ];
+
+        this.colors = ["red", "green", "blue", "yellow", "purple", "orange"];
+        
+        this.rotationX = 0;
+        this.rotationY = 0;
     }
 
-    draw(ctx: CanvasRenderingContext2D) {
-        const colors = ['red', 'green', 'blue', 'yellow', 'black', 'orange'];
+    rotate(axis: string, theta: number) {
+        const sinTheta = Math.sin(theta);
+        const cosTheta = Math.cos(theta);
+        for (const vertex of this.vertices) {
+            let x = vertex[0];
+            let y = vertex[1];
+            let z = vertex[2];
+            if (axis === 'x') {
+                vertex[1] = y * cosTheta - z * sinTheta;
+                vertex[2] = z * cosTheta + y * sinTheta;
+            } else if (axis === 'y') {
+                vertex[0] = x * cosTheta - z * sinTheta;
+                vertex[2] = z * cosTheta + x * sinTheta;
+            }
+        }
+    }
+
+    drawFace(face: number[], color: string) {
+        let normal = this.calculateNormal(face);
+        if (normal[2] > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.vertices[face[0]][0] * this.size, this.vertices[face[0]][1] * this.size);
+            for (let i = 1; i < face.length; i++) {
+                this.ctx.lineTo(this.vertices[face[i]][0] * this.size, this.vertices[face[i]][1] * this.size);
+            }
+            this.ctx.closePath();
+            this.ctx.fillStyle = color;
+            this.ctx.fill();
+            this.ctx.stroke();
+        }
+    }
+
+    calculateNormal(face: number[]) {
+        let v1 = this.vertices[face[0]];
+        let v2 = this.vertices[face[1]];
+        let v3 = this.vertices[face[2]];
+        let normal = [
+            (v2[1] - v1[1]) * (v3[2] - v1[2]) - (v2[2] - v1[2]) * (v3[1] - v1[1]),
+            (v2[2] - v1[2]) * (v3[0] - v1[0]) - (v2[0] - v1[0]) * (v3[2] - v1[2]),
+            (v2[0] - v1[0]) * (v3[1] - v1[1]) - (v2[1] - v1[1]) * (v3[0] - v1[0])
+        ];
+        let length = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+        return [normal[0] / length, normal[1] / length, normal[2] / length];
+    }
+
+    draw() {
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+        this.ctx.save();
+        this.ctx.translate(this.ctx.canvas.width / 2, this.ctx.canvas.height / 2);
+
         for (let i = 0; i < this.faces.length; i++) {
-            const face = this.faces[i];
-            ctx.fillStyle = colors[i];
-            
-            ctx.beginPath();
-            ctx.moveTo(this.vertices[face[0]].x, this.vertices[face[0]].y);
-            for (let j = 1; j < face.length; j++) {
-                ctx.lineTo(this.vertices[face[j]].x, this.vertices[face[j]].y);
-            }
-            //see if this face is visible
-            const v1 = this.vertices[face[1]];
-            const v2 = this.vertices[face[2]];
-            const v3 = this.vertices[face[3]];
-            const v12 = { x: v2.x - v1.x, y: v2.y - v1.y, z: v2.z - v1.z };
-            const v13 = { x: v3.x - v1.x, y: v3.y - v1.y, z: v3.z - v1.z };
-            const v = { x: v12.y * v13.z - v12.z * v13.y, y: v12.z * v13.x - v12.x * v13.z, z: v12.x * v13.y - v12.y * v13.x };
-            if (v.z > 0) {
-                ctx.fill();
-            }
-            ctx.closePath();
-            
+            this.drawFace(this.faces[i], this.colors[i]);
         }
-        // ctx.stroke();
-    }
 
-    rotateX(theta: number) {
-        const center = this.getCenter();
-        const cos = Math.cos(theta);
-        const sin = Math.sin(theta);
-        for (let i = 0; i < this.vertices.length; i++) {
-            let { x, y, z } = this.vertices[i];
-            y -= center.y;
-            z -= center.z;
-            this.vertices[i] = {
-                x: x,
-                y: y * cos - z * sin + center.y,
-                z: y * sin + z * cos + center.z
-            };
-        }
+        this.ctx.restore();
     }
-
-    rotateY(theta: number) {
-        const center = this.getCenter();
-        const cos = Math.cos(theta);
-        const sin = Math.sin(theta);
-        for (let i = 0; i < this.vertices.length; i++) {
-            let { x, y, z } = this.vertices[i];
-            x -= center.x;
-            z -= center.z;
-            this.vertices[i] = {
-                x: x * cos + z * sin + center.x,
-                y: y,
-                z: -x * sin + z * cos + center.z
-            };
-        }
-    }
-
-    rotateZ(theta: number) {
-        const center = this.getCenter();
-        const cos = Math.cos(theta);
-        const sin = Math.sin(theta);
-        for (let i = 0; i < this.vertices.length; i++) {
-            let { x, y, z } = this.vertices[i];
-            x -= center.x;
-            y -= center.y;
-            this.vertices[i] = {
-                x: x * cos - y * sin + center.x,
-                y: x * sin + y * cos + center.y,
-                z: z
-            };
-        }
-    }
-
-    project() {
-        for (let i = 0; i < this.vertices.length; i++) {
-            const { x, y, z } = this.vertices[i];
-            this.vertices[i] = {
-                x: x - z * 0.5,
-                y: y - z * 0.5,
-                z: z
-            }
-        }
-    }
-
 }
 
+window.onload = function() {
+    const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const cube = new Cube(context, 100);
+    let lastX: number, lastY: number, dragging = false;
 
-// Define the 3D points of the cube
-var vertices = [
-    { x: 100, y: 100, z: 100 },
-    { x: 200, y: 100, z: 100 },
-    { x: 200, y: 200, z: 100 },
-    { x: 100, y: 200, z: 100 },
-    { x: 100, y: 100, z: 200 },
-    { x: 200, y: 100, z: 200 },
-    { x: 200, y: 200, z: 200 },
-    { x: 100, y: 200, z: 200 }
-];
+    canvas.onmousedown = function(e) {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+    };
 
+    canvas.onmouseup = canvas.onmouseleave = function() {
+        dragging = false;
+    };
 
+    canvas.onmousemove = function(e) {
+        if (dragging) {
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            cube.rotate('y', dx * 0.01);
+            cube.rotate('x', dy * 0.01);
+            cube.draw();
+        }
+    };
 
-const cube = new Cube(vertices);
-
-ctx.translate(canvas.width / 2 - 150, canvas.height / 2 - 150);
-cube.draw(ctx);
-
-
-
-
-let startX = 0;
-let startY = 0;
-let isMouseDown = false;
-document.addEventListener('mousedown', (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
-    isMouseDown = true;
-});
-
-document.addEventListener('mousemove', (e) => {
-    if (isMouseDown) {
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        startX = e.clientX;
-        startY = e.clientY;
-        cube.rotateY(dx * -0.01);
-        cube.rotateX(dy * 0.01);
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        cube.draw(ctx);
-    }
-});
-
-document.addEventListener('mouseup', () => {
-    isMouseDown = false;
-});
-
-//add touch event
-document.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    isMouseDown = true;
-});
-
-document.addEventListener('touchmove', (e) => {
-    if (isMouseDown) {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        cube.rotateY(dx * -0.01);
-        cube.rotateX(dy * 0.01);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        cube.draw(ctx);
-    }
-});
-
-document.addEventListener('touchend', () => {
-    isMouseDown = false;
-});
-
-setInterval(() => {
-    console.log(cube.vertices);
-}, 1000);
+    cube.draw();
+};
