@@ -6,6 +6,8 @@ class Cube {
     colors: string[];
     rotationX: number;
     rotationY: number;
+    fov: number;
+    viewerDistance: number;
 
     constructor(context: CanvasRenderingContext2D, size: number) {
         this.ctx = context;
@@ -34,6 +36,8 @@ class Cube {
         
         this.rotationX = 0;
         this.rotationY = 0;
+        this.fov = Math.PI;  // Example value, can be adjusted
+        this.viewerDistance = 1000;  // Example value, can be adjusted
     }
 
     rotate(axis: string, theta: number) {
@@ -54,12 +58,22 @@ class Cube {
     }
 
     drawFace(face: number[], color: string) {
-        let normal = this.calculateNormal(face);
-        if (normal[2] > 0) {
+        // Project the vertices of the face
+        const projectedVertices = face.map(index => this.project(this.vertices[index]));
+    
+        // Calculate the winding order using the first three vertices of the face
+        const [A, B, C] = projectedVertices;
+        const AB = [B[0] - A[0], B[1] - A[1]];
+        const AC = [C[0] - A[0], C[1] - A[1]];
+        const crossZ = AB[0] * AC[1] - AB[1] * AC[0];
+    
+        // Draw the face only if the winding is clockwise (crossZ > 0)
+        if (crossZ > 0) {
             this.ctx.beginPath();
-            this.ctx.moveTo(this.vertices[face[0]][0] * this.size, this.vertices[face[0]][1] * this.size);
-            for (let i = 1; i < face.length; i++) {
-                this.ctx.lineTo(this.vertices[face[i]][0] * this.size, this.vertices[face[i]][1] * this.size);
+            this.ctx.moveTo(A[0] * this.size, A[1] * this.size);
+            for (let i = 1; i < projectedVertices.length; i++) {
+                const [x, y] = projectedVertices[i];
+                this.ctx.lineTo(x * this.size, y * this.size);
             }
             this.ctx.closePath();
             this.ctx.fillStyle = color;
@@ -67,6 +81,7 @@ class Cube {
             this.ctx.stroke();
         }
     }
+    
 
     calculateNormal(face: number[]) {
         let v1 = this.vertices[face[0]];
@@ -92,6 +107,15 @@ class Cube {
 
         this.ctx.restore();
     }
+
+    project(vertex: number[]) {
+        const scale = 100; // Adjust this value as needed
+        const scaledVertex = [vertex[0] * scale, vertex[1] * scale, vertex[2] * scale];
+        const factor = this.fov / (this.viewerDistance + scaledVertex[2]);
+        return [scaledVertex[0] * factor, scaledVertex[1] * factor];
+    }
+    
+    
 }
 
 window.onload = function() {
@@ -99,7 +123,7 @@ window.onload = function() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const context = canvas.getContext('2d') as CanvasRenderingContext2D;
-    const cube = new Cube(context, 100);
+    const cube = new Cube(context, 1000);
     let lastX: number, lastY: number, dragging = false;
 
     canvas.onmousedown = function(e) {
