@@ -44,8 +44,14 @@ class Cube {
             for (let j = 1; j < face.length; j++) {
                 ctx.lineTo(this.vertices[face[j]].x, this.vertices[face[j]].y);
             }
-            const orthog = this.vertices[face[1]].z - this.vertices[face[0]].z;
-            if (orthog > 0) {
+            //see if this face is visible
+            const v1 = this.vertices[face[1]];
+            const v2 = this.vertices[face[2]];
+            const v3 = this.vertices[face[3]];
+            const v12 = { x: v2.x - v1.x, y: v2.y - v1.y, z: v2.z - v1.z };
+            const v13 = { x: v3.x - v1.x, y: v3.y - v1.y, z: v3.z - v1.z };
+            const v = { x: v12.y * v13.z - v12.z * v13.y, y: v12.z * v13.x - v12.x * v13.z, z: v12.x * v13.y - v12.y * v13.x };
+            if (v.z > 0) {
                 ctx.fill();
             }
             ctx.closePath();
@@ -153,9 +159,9 @@ document.addEventListener('mousemove', (e) => {
         const dy = e.clientY - startY;
         startX = e.clientX;
         startY = e.clientY;
-        console.log(dx, dy);    
         cube.rotateY(dx * -0.01);
         cube.rotateX(dy * 0.01);
+        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         cube.draw(ctx);
     }
@@ -189,5 +195,6 @@ document.addEventListener('touchend', () => {
     isMouseDown = false;
 });
 
-
-
+setInterval(() => {
+    console.log(cube.vertices);
+}, 1000);
