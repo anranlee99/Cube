@@ -34,19 +34,24 @@ class Cube {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        // ctx.save();
-        // ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.beginPath();
+        const colors = ['red', 'green', 'blue', 'yellow', 'black', 'orange'];
         for (let i = 0; i < this.faces.length; i++) {
             const face = this.faces[i];
+            ctx.fillStyle = colors[i];
+            
+            ctx.beginPath();
             ctx.moveTo(this.vertices[face[0]].x, this.vertices[face[0]].y);
             for (let j = 1; j < face.length; j++) {
                 ctx.lineTo(this.vertices[face[j]].x, this.vertices[face[j]].y);
             }
+            const orthog = this.vertices[face[1]].z - this.vertices[face[0]].z;
+            if (orthog > 0) {
+                ctx.fill();
+            }
             ctx.closePath();
+            
         }
-        ctx.stroke();
-        // ctx.restore();
+        // ctx.stroke();
     }
 
     rotateX(theta: number) {
@@ -127,8 +132,10 @@ var vertices = [
 
 const cube = new Cube(vertices);
 
-
+ctx.translate(canvas.width / 2 - 150, canvas.height / 2 - 150);
 cube.draw(ctx);
+
+
 
 
 let startX = 0;
@@ -171,7 +178,7 @@ document.addEventListener('touchmove', (e) => {
         const dy = e.touches[0].clientY - startY;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
-        cube.rotateY(dx * 0.01);
+        cube.rotateY(dx * -0.01);
         cube.rotateX(dy * 0.01);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         cube.draw(ctx);
