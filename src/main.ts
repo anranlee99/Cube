@@ -120,10 +120,10 @@ class Cube {
 
 window.onload = function() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth / 2;
+    canvas.height = canvas.width;
     const context = canvas.getContext('2d') as CanvasRenderingContext2D;
-    const cube = new Cube(context, 1000);
+    const cube = new Cube(context, 500);
     let lastX: number, lastY: number, dragging = false;
 
     canvas.onmousedown = function(e) {
